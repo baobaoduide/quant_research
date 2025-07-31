@@ -1,0 +1,1 @@
+#  jupyter lab --notebook-dir=projects/gk_model/notebooks

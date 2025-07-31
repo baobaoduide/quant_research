@@ -1,0 +1,18 @@
+# Python 忽略规则
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 环境文件
+venv/
+.env
+
+# IDE 文件
+.idea/
+.vscode/
+*.iml
+
+# 系统文件
+Thumbs.db
+.DS_Store
