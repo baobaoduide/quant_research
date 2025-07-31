@@ -154,4 +154,3 @@ if __name__ == '__main__':
 	df = loader.load(category='financials',
 			data_type='ashare_income',
 			date='20230821',)
-	pass

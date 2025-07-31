@@ -57,4 +57,6 @@ def prepare_base_data():
 
 if __name__ == '__main__':
 	df = prepare_base_data()
+	
+	load_gk_base_data()
 
