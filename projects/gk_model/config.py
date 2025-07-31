@@ -15,13 +15,3 @@ FIGURES_DIR = RESULTS_DIR / "figures"
 TABLES_DIR = RESULTS_DIR / "tables"
 MODELS_DIR = RESULTS_DIR / "models"
 
-# 模型参数
-GK_MODEL_PARAMS = {
-    'lookback_period': 5,    # 回溯年数
-    'return_window': 12,      # 回报计算窗口（月）
-    'min_market_cap': 1e9,    # 最小市值过滤（10亿）
-}
-
-# 数据范围
-START_DATE = '20100101'
-END_DATE = '20231231'

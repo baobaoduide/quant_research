@@ -1,7 +1,7 @@
 from pathlib import Path
-from core.data_utils import l0_loader
 from core.data_utils.utils import format_date_str
-from core.config import l1_storage
+from core.data_utils.loader import DataLoader
+from core.data_utils.storage import DataStorage
 import logging
 import pandas as pd
 
@@ -22,23 +22,9 @@ class CorporateActionsPreprocessor:
 	def _load_raw_data(self, filename: str, dtype: dict = None) -> pd.DataFrame:
 		"""加载原始数据文件"""
 		try:
-			if self.date:
-				df = l0_loader.load_raw_file(
-					source='wind',
-					category='corporate_actions',
-					date=self.date,
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载指定日期数据: {self.date} - {filename}")
-			else:
-				df = l0_loader.load_latest_file(
-					source='wind',
-					category='corporate_actions',
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载最新数据 - {filename}")
+			DATA_LOADER = DataLoader()
+			df = DATA_LOADER.load_l0(source='wind', dataset='corporate_actions', date=self.date, filename=filename,
+			                         dtype=dtype)
 			return df
 		except Exception as e:
 			logger.error(f"数据加载失败: {filename} - {str(e)}", exc_info=True)
@@ -49,7 +35,7 @@ class CorporateActionsPreprocessor:
 		try:
 			# 1. 加载原始数据
 			df = self._load_raw_data(
-				'中国A股分红[AShareDividend].csv',
+				'中国A股分红[AShareDividend]',
 				dtype={'REPORT_PERIOD': str, 'EX_DT': str}
 			)
 			logger.info(f"开始预处理，原始数据形状: {df.shape}")
@@ -75,14 +61,13 @@ class CorporateActionsPreprocessor:
 			df.reset_index(drop=True, inplace=True)
 			
 			# 3. 保存处理结果
-			save_path, metadata = l1_storage.save_processed_data(
+			DATA_STORAGE = DataStorage()
+			save_path = DATA_STORAGE.save_l1(
 				df=df,
-				category="corporate_actions",
-				table_name="ashare_dividend",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
+				dataset="corporate_actions",
+				table="ashare_dividend",
+				date=self.date)
+			return save_path
 		
 		except Exception as e:
 			logger.error(f"预处理失败: {str(e)}", exc_info=True)

@@ -1,8 +1,7 @@
 from pathlib import Path
-from core.data_utils import l0_loader
-from core.data_utils.l1_loader import L1Loader
 from core.data_utils.utils import format_date_str
-from core.config import l1_storage
+from core.data_utils.loader import DataLoader
+from core.data_utils.storage import DataStorage
 import logging
 import pandas as pd
 from tqdm import tqdm
@@ -24,23 +23,9 @@ class FinancialsPreprocessor:
 	def _load_raw_data(self, filename: str, dtype: dict = None) -> pd.DataFrame:
 		"""加载原始数据文件"""
 		try:
-			if self.date:
-				df = l0_loader.load_raw_file(
-					source='wind',
-					category='financials',
-					date=self.date,
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载指定日期数据: {self.date} - {filename}")
-			else:
-				df = l0_loader.load_latest_file(
-					source='wind',
-					category='financials',
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载最新数据 - {filename}")
+			DATA_LOADER = DataLoader()
+			df = DATA_LOADER.load_l0(source='wind', dataset='financials', date=self.date, filename=filename,
+			                         dtype=dtype)
 			return df
 		except Exception as e:
 			logger.error(f"数据加载失败: {filename} - {str(e)}", exc_info=True)
@@ -51,7 +36,7 @@ class FinancialsPreprocessor:
 		try:
 			# 1. 加载原始数据
 			df = self._load_raw_data(
-				'中国A股利润表[AShareIncome].csv',
+				'中国A股利润表[AShareIncome]',
 				dtype={'ACTUAL_ANN_DT': str, 'REPORT_PERIOD': str}
 			)
 			logger.info(f"开始预处理，原始数据形状: {df.shape}")
@@ -76,14 +61,13 @@ class FinancialsPreprocessor:
 			df.reset_index(drop=True, inplace=True)
 			
 			# 3. 保存处理结果
-			save_path, metadata = l1_storage.save_processed_data(
+			DATA_STORAGE = DataStorage()
+			save_path = DATA_STORAGE.save_l1(
 				df=df,
-				category="financials",
-				table_name="ashare_income",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
+				dataset="financials",
+				table="ashare_income",
+				date=self.date)
+			return save_path
 		
 		except Exception as e:
 			logger.error(f"预处理失败: {str(e)}", exc_info=True)
@@ -94,7 +78,7 @@ class FinancialsPreprocessor:
 		try:
 			# 1. 加载原始数据
 			df = self._load_raw_data(
-				'asharebalancesheet.csv',
+				'asharebalancesheet',
 				dtype={'report_period': str, 'actual_ann_dt': str}
 			)
 			logger.info(f"开始预处理，原始数据形状: {df.shape}")
@@ -122,14 +106,13 @@ class FinancialsPreprocessor:
 			df.reset_index(drop=True, inplace=True)
 			
 			# 3. 保存处理结果
-			save_path, metadata = l1_storage.save_processed_data(
+			DATA_STORAGE = DataStorage()
+			save_path = DATA_STORAGE.save_l1(
 				df=df,
-				category="financials",
-				table_name="ashare_balancesheet",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
+				dataset="financials",
+				table="ashare_balancesheet",
+				date=self.date)
+			return save_path
 		
 		except Exception as e:
 			logger.error(f"预处理失败: {str(e)}", exc_info=True)
@@ -141,8 +124,8 @@ class FinancialsPreprocessor:
 			logger.info("开始计算净利润TTM（年度视角）...")
 			
 			# 1. 加载预处理后的利润表数据
-			loader = L1Loader()
-			df_income = loader.load('financials', 'ashare_income', date='20230821')
+			DATA_LOADER = DataLoader()
+			df_income = DATA_LOADER.load_l1(dataset='financials', date=self.date, table='ashare_income')
 			
 			# 2. 准备数据
 			df_income['report_year'] = df_income['report_period'].str[:4]
@@ -226,14 +209,13 @@ class FinancialsPreprocessor:
 			logger.info(f"TTM计算完成，有效记录数: {len(df_ttm_long)}")
 			
 			# 8. 保存TTM数据
-			save_path, metadata = l1_storage.save_processed_data(
+			DATA_STORAGE = DataStorage()
+			save_path = DATA_STORAGE.save_l1(
 				df=df_ttm_long,
-				category="financials",
-				table_name="ashare_net_profit_ttm_annual",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
+				dataset="financials",
+				table="ashare_net_profit_ttm_annual",
+				date=self.date)
+			return save_path
 		
 		except Exception as e:
 			logger.error(f"净利润TTM计算失败: {str(e)}", exc_info=True)
@@ -261,8 +243,9 @@ class FinancialsPreprocessor:
 # 使用示例
 if __name__ == "__main__":
 	processor = FinancialsPreprocessor(date="20230821")
-	profit_ttm = processor.preprocess_ashare_balancesheet()
-	# profit_ttm = processor.calculate_net_profit_ttm()
+	# profit_ttm = processor.preprocess_ashare_balancesheet()
+	# profit_ttm = processor.preprocess_ashare_income()
+	profit_ttm = processor.calculate_net_profit_ttm()
 	# processor.preprocess_all()
 	# summary = processor.get_processing_summary()
 	# print("处理摘要:")

@@ -1,7 +1,7 @@
 from pathlib import Path
-from core.data_utils import l0_loader
 from core.data_utils.utils import format_date_str
-from core.config import l1_storage
+from core.data_utils.loader import DataLoader
+from core.data_utils.storage import DataStorage
 import logging
 import pandas as pd
 
@@ -22,23 +22,8 @@ class SecurityMasterPreprocessor:
 	def _load_raw_data(self, filename: str, dtype: dict = None) -> pd.DataFrame:
 		"""加载原始数据文件"""
 		try:
-			if self.date:
-				df = l0_loader.load_raw_file(
-					source='wind',
-					category='security_master',
-					date=self.date,
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载指定日期数据: {self.date} - {filename}")
-			else:
-				df = l0_loader.load_latest_file(
-					source='wind',
-					category='security_master',
-					filename=filename,
-					dtype=dtype
-				)
-				logger.info(f"加载最新数据 - {filename}")
+			DATA_LOADER = DataLoader()
+			df = DATA_LOADER.load_l0(source='wind', dataset='security_master', date=self.date, filename=filename, dtype=dtype)
 			return df
 		except Exception as e:
 			logger.error(f"数据加载失败: {filename} - {str(e)}", exc_info=True)
@@ -49,7 +34,7 @@ class SecurityMasterPreprocessor:
 		try:
 			# 1. 加载原始数据
 			df = self._load_raw_data(
-				'中国A股基本资料[AShareDescription].csv',
+				'中国A股基本资料[AShareDescription]',
 				dtype={'S_INFO_LISTDATE': str, 'S_INFO_DELISTDATE': str}
 			)
 			logger.info(f"开始预处理A股基本资料，原始数据形状: {df.shape}")
@@ -75,48 +60,22 @@ class SecurityMasterPreprocessor:
 			df.reset_index(drop=True, inplace=True)
 			
 			# 3. 保存处理结果
-			save_path, metadata = l1_storage.save_processed_data(
+			DATA_STORAGE = DataStorage()
+			save_path = DATA_STORAGE.save_l1(
 				df=df,
-				category="security_master",
-				table_name="ashare_description",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
+				dataset="security_master",
+				table="ashare_description",
+				date=self.date)
+			return save_path
 		
 		except Exception as e:
 			logger.error(f"A股基本资料预处理失败: {str(e)}", exc_info=True)
-			raise
-	
-	def preprocess_ashare_static_info(self) -> Path:
-		"""预处理A股静态信息数据"""
-		try:
-			# 1. 加载原始数据
-			df = self._load_raw_data('中国A股静态信息[AShareStaticInfo].csv')
-			logger.info(f"开始预处理A股静态信息，原始数据形状: {df.shape}")
-			
-			# 2. 数据处理逻辑
-			# ... 具体处理步骤 ...
-			
-			# 3. 保存处理结果
-			save_path, metadata = l1_storage.save_processed_data(
-				df=df,
-				category="security_master",
-				table_name="ashare_",
-				date=self.date,
-				metadata={'source': 'wind'}
-			)
-			return save_path, metadata
-		
-		except Exception as e:
-			logger.error(f"A股静态信息预处理失败: {str(e)}", exc_info=True)
 			raise
 	
 	def preprocess_all(self):
 		"""预处理所有security_master数据"""
 		results = {}
 		results['ashare_description'] = self.preprocess_ashare_description()
-		# results['ashare_static_info'] = self.preprocess_ashare_static_info()
 		# 添加更多表...
 		return results
 	

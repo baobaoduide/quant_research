@@ -1,39 +1,4 @@
-from pathlib import Path
 import pandas as pd
-
-
-def detect_file_format(path: Path) -> str:
-	"""检测文件格式"""
-	suffix = path.suffix.lower()
-	
-	if suffix == ".parquet":
-		return "parquet"
-	elif suffix == ".csv":
-		return "csv"
-	elif suffix in (".h5", ".hdf5", ".hdf"):
-		return "hdf"
-	elif suffix == ".feather":
-		return "feather"
-	else:
-		raise ValueError(f"无法识别的文件格式: {suffix}")
-
-
-def merge_datasets(loader, datasets: list) -> pd.DataFrame:
-	"""合并多个数据集"""
-	combined = pd.DataFrame()
-	for dataset in datasets:
-		source, data_type, date, filename = dataset
-		df = loader.load_source_data(source, data_type, date, filename)
-		combined = pd.concat([combined, df], ignore_index=True)
-	return combined
-
-
-def read_excel_file(path: Path, **kwargs) -> pd.DataFrame:
-	"""读取 Excel 文件"""
-	try:
-		return pd.read_excel(path, **kwargs)
-	except Exception as e:
-		raise ValueError(f"读取 Excel 失败: {path} | 错误: {str(e)}")
 
 
 def format_date_str(date_series):
