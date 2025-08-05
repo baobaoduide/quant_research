@@ -100,3 +100,9 @@ class DataLoader:
 		except Exception as e:
 			logger.error(f"文件加载失败: {file_path} - {e}")
 			raise
+
+
+if __name__ == '__main__':
+	loader = DataLoader()
+	df = loader.load_l0(source='wind', dataset='index_data', filename='中国A股指数成份股[AIndexMembers]')
+	
